@@ -1,0 +1,13 @@
+{
+  "name": "product-based-sso",
+  "private": true,
+  "scripts": {
+    "build": "wp-scripts build --webpack-src-dir=ui-src --output-path=ui-src-build && terser ui-src-assets/js/frontend-switch.js -c -m -o ui-src-build/frontend-switch.js && cleancss -o ui-src-build/sso-switch.css ui-src-assets/css/sso-switch.css && cleancss -o ui-src-build/admin-ui.css ui-src-assets/css/admin-ui.css",
+    "start": "wp-scripts start --webpack-src-dir=ui-src --output-path=ui-src-build"
+  },
+  "devDependencies": {
+    "@wordpress/scripts": "^27.0.0",
+    "clean-css-cli": "^5.6.3",
+    "terser": "^5.31.6"
+  }
+}
