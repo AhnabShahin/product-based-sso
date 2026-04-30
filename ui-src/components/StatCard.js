@@ -1,14 +1,6 @@
-import { Icon, Icons } from "./Icon";
-
-export const StatCard = ({ label, value, icon, accent }) => (
-  <div style={{ background: "var(--color-background-secondary)", borderRadius: "var(--border-radius-md)",
-    padding: "1rem 1.25rem", display: "flex", flexDirection: "column", gap: 6, flex: 1 }}>
-    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-      <span style={{ fontSize: 12, color: "var(--color-text-secondary)", fontWeight: 500 }}>{label}</span>
-      <span style={{ color: accent || "var(--color-text-secondary)" }}>
-        <Icon d={Icons[icon]} size={14} color={accent || "var(--color-text-secondary)"} />
-      </span>
-    </div>
-    <span style={{ fontSize: 26, fontWeight: 500, color: "var(--color-text-primary)" }}>{value}</span>
+export const StatCard = ({ label, value, color }) => (
+  <div style={{ background: "var(--bg2)", borderRadius: "var(--radius-md)", padding: "12px 14px", flex: 1 }}>
+    <p style={{ fontSize: 10, fontWeight: 600, color: "var(--text3)", letterSpacing: "0.04em", textTransform: "uppercase", marginBottom: 6 }}>{label}</p>
+    <p style={{ fontSize: 22, fontWeight: 600, color: color || "var(--text1)" }}>{value}</p>
   </div>
 );

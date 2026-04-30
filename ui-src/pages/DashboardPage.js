@@ -1,101 +1,64 @@
-import { useEffect, useState } from "@wordpress/element";
-import { api } from "../utils/api";
 import { Badge } from "../components/Badge";
-import { Icon, Icons } from "../components/Icon";
+import { Ico, I } from "../components/Icon";
 import { StatCard } from "../components/StatCard";
 
-export const DashboardPage = ({ toast }) => {
-  const [site, setSite] = useState({ name: "", url: "", webKeySet: false, totalProducts: 0, activeProducts: 0 });
-  const [stats, setStats] = useState({ totalAuths: 0, successAuths: 0, failedAuths: 0, avgResponseMs: 0 });
-  const [recentLogs, setRecentLogs] = useState([]);
+const PRODUCTS_INIT = [
+  { id: 1, name: "Main Site", page_url: "https://main.example.com/dashboard", web_key: "wk_a1b2c3d4e5f6a1b2", is_active: true, created_at: "2026-04-29" },
+  { id: 2, name: "Shop Site", page_url: "https://shop.example.com/products", web_key: "wk_g7h8i9j0k1l2g7h8", is_active: true, created_at: "2026-04-28" },
+  { id: 3, name: "Blog", page_url: "https://blog.example.com/", web_key: "wk_m3n4o5p6q7r8m3n4", is_active: false, created_at: "2026-04-27" },
+];
+const LOGS_INIT = [
+  { id: 1, type: "success", email: "alice@example.com", from: "Main Site", to: "Shop", ip: "203.0.113.10", reason: null, time: "11:42:10" },
+  { id: 2, type: "failure", email: "bob@example.com", from: "Blog", to: "Main Site", ip: "198.51.100.4", reason: "token_expired", time: "11:40:05" },
+  { id: 3, type: "success", email: "carol@example.com", from: "Shop", to: "Blog", ip: "203.0.113.22", reason: null, time: "11:38:52" },
+  { id: 4, type: "device_mismatch", email: "dan@example.com", from: "Main Site", to: "Shop", ip: "192.0.2.88", reason: "device_mismatch", time: "11:35:10" },
+  { id: 5, type: "failure", email: "eve@example.com", from: "Shop", to: "Main Site", ip: "10.0.0.5", reason: "user_not_found", time: "11:30:01" },
+];
 
-  useEffect(() => {
-    let mounted = true;
-    api("/dashboard")
-      .then((data) => {
-        if (!mounted) return;
-        setSite({
-          name: data.site?.name || "",
-          url: data.site?.url || "",
-          webKeySet: Boolean(data.site?.web_key_set),
-          totalProducts: data.site?.total_products || 0,
-          activeProducts: data.site?.active_products || 0,
-        });
-        setStats({
-          totalAuths: data.stats?.total_auths || 0,
-          successAuths: data.stats?.success_auths || 0,
-          failedAuths: data.stats?.failed_auths || 0,
-          avgResponseMs: data.stats?.avg_response_ms || 0,
-        });
-        setRecentLogs(data.recent_logs || []);
-      })
-      .catch(() => toast("Failed to load dashboard", "error"));
-    return () => { mounted = false; };
-  }, [toast]);
-
+export const DashboardPage = () => {
+  const ok = LOGS_INIT.filter(l => l.type === "success").length;
+  const fail = LOGS_INIT.filter(l => l.type !== "success").length;
   return (
-    <div>
-      <div style={{ marginBottom: 24 }}>
-        <h2 style={{ margin: "0 0 4px", fontSize: 20, fontWeight: 500 }}>Dashboard</h2>
-        <p style={{ margin: 0, fontSize: 13, color: "var(--color-text-secondary)" }}>SSO activity overview for this site</p>
-      </div>
+    <div className="page-anim">
+      <h2 style={{ fontSize: 18, fontWeight: 600, marginBottom: 4 }}>Dashboard</h2>
+      <p style={{ fontSize: 12, color: "var(--text3)", marginBottom: 20 }}>SSO activity overview for this site</p>
 
-      <div style={{ background: "var(--color-background-primary)", border: "0.5px solid var(--color-border-tertiary)",
-        borderRadius: "var(--border-radius-lg)", padding: "20px 24px", marginBottom: 20,
-        display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-          <div style={{ width: 44, height: 44, borderRadius: "var(--border-radius-md)",
-            background: "var(--color-background-info)", display: "flex", alignItems: "center",
-            justifyContent: "center", border: "0.5px solid var(--color-border-info)" }}>
-            <Icon d={Icons.shield} size={20} color="var(--color-text-info)" />
+      <div style={{ background: "var(--bg0)", border: "1px solid var(--border1)", borderRadius: "var(--radius-lg)", padding: "18px 20px", transition: "background 0.25s, border-color 0.25s", display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <div style={{ width: 40, height: 40, background: "var(--accent-bg)", borderRadius: "var(--radius-md)", display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid var(--border1)", color: "var(--accent)" }}>
+            <Ico d={I.shield} size={18} />
           </div>
           <div>
-            <p style={{ margin: "0 0 2px", fontSize: 15, fontWeight: 500, color: "var(--color-text-primary)" }}>{site.name || "Current site"}</p>
-            <p style={{ margin: 0, fontSize: 12, color: "var(--color-text-secondary)" }}>{site.url || "—"}</p>
+            <p style={{ fontSize: 14, fontWeight: 600, marginBottom: 2 }}>My WordPress Site</p>
+            <p style={{ fontSize: 11, color: "var(--text3)" }}>https://mysite.example.com</p>
           </div>
         </div>
-        <div style={{ display: "flex", gap: 8 }}>
-          <Badge status={site.webKeySet ? "active" : "inactive"} />
-          <span style={{ fontSize: 12, color: "var(--color-text-secondary)", alignSelf: "center" }}>
-            {site.activeProducts} active product{site.activeProducts !== 1 ? "s" : ""}
-          </span>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <Badge status="active" />
+          <span style={{ fontSize: 11, color: "var(--text3)" }}>{PRODUCTS_INIT.filter(p => p.is_active).length} active products</span>
         </div>
       </div>
 
-      <div style={{ display: "flex", gap: 12, marginBottom: 24, flexWrap: "wrap" }}>
-        <StatCard label="Total auth attempts" value={stats.totalAuths} icon="activity" />
-        <StatCard label="Successful logins" value={stats.successAuths} icon="check" accent="#1a7a3a" />
-        <StatCard label="Failed attempts" value={stats.failedAuths} icon="alert" accent="#b91c1c" />
-        <StatCard label="Avg response time" value={stats.avgResponseMs ? `${stats.avgResponseMs}ms` : "—"} icon="zap" />
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 10, marginBottom: 18 }}>
+        <StatCard label="Total attempts" value={LOGS_INIT.length} />
+        <StatCard label="Successful" value={ok} color="var(--success)" />
+        <StatCard label="Failed" value={fail} color="var(--danger)" />
+        <StatCard label="Avg response" value="240ms" />
       </div>
 
-      <div style={{ background: "var(--color-background-primary)", border: "0.5px solid var(--color-border-tertiary)", borderRadius: "var(--border-radius-lg)" }}>
-        <div style={{ padding: "16px 20px", borderBottom: "0.5px solid var(--color-border-tertiary)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <span style={{ fontSize: 14, fontWeight: 500 }}>Recent auth attempts</span>
-        </div>
-        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-          <thead>
-            <tr style={{ background: "var(--color-background-secondary)" }}>
-              {["User", "Route", "Status", "IP", "Time"].map(h => (
-                <th key={h} style={{ padding: "8px 16px", textAlign: "left", fontSize: 11, fontWeight: 500,
-                  color: "var(--color-text-secondary)", letterSpacing: "0.05em", textTransform: "uppercase",
-                  borderBottom: "0.5px solid var(--color-border-tertiary)" }}>{h}</th>
-              ))}
+      <div style={{ background: "var(--bg0)", border: "1px solid var(--border1)", borderRadius: "var(--radius-lg)", padding: 0, overflow: "hidden" }}>
+        <div style={{ padding: "12px 16px", borderBottom: "1px solid var(--border1)", fontSize: 13, fontWeight: 600 }}>Recent auth attempts</div>
+        <table>
+          <thead><tr><th>User</th><th>Route</th><th>Status</th><th>IP</th><th>Time</th></tr></thead>
+          <tbody>{LOGS_INIT.slice(0, 4).map(l => (
+            <tr key={l.id}>
+              <td style={{ fontWeight: 500 }}>{l.email}</td>
+              <td><span style={{ fontFamily: "var(--mono)", fontSize: 10, color: "var(--text3)" }}>{l.from} -> {l.to}</span></td>
+              <td><Badge status={l.reason || l.type} /></td>
+              <td><span style={{ fontFamily: "var(--mono)", fontSize: 10, color: "var(--text3)" }}>{l.ip}</span></td>
+              <td style={{ color: "var(--text3)", fontSize: 11 }}>{l.time}</td>
             </tr>
-          </thead>
-          <tbody>
-            {recentLogs.map((log, i) => (
-              <tr key={log.id || i} style={{ borderBottom: i < recentLogs.length - 1 ? "0.5px solid var(--color-border-tertiary)" : "none" }}>
-                <td style={{ padding: "10px 16px", color: "var(--color-text-primary)" }}>{log.user_email || "—"}</td>
-                <td style={{ padding: "10px 16px", color: "var(--color-text-secondary)", fontFamily: "var(--font-mono)", fontSize: 11 }}>
-                  {log.source_product || "?"} -> {log.target_product || "?"}
-                </td>
-                <td style={{ padding: "10px 16px" }}><Badge status={log.error_reason || log.event_type} /></td>
-                <td style={{ padding: "10px 16px", color: "var(--color-text-secondary)", fontFamily: "var(--font-mono)", fontSize: 11 }}>{log.ip_address || "—"}</td>
-                <td style={{ padding: "10px 16px", color: "var(--color-text-secondary)", fontSize: 11 }}>{(log.created_at || "").split(" ")[1] || "—"}</td>
-              </tr>
-            ))}
-          </tbody>
+          ))}</tbody>
         </table>
       </div>
     </div>

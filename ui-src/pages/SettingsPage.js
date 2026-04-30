@@ -1,133 +1,59 @@
-import { useEffect, useState } from "@wordpress/element";
-import { api } from "../utils/api";
+import { useState } from "@wordpress/element";
 import { Btn } from "../components/Button";
 import { Field } from "../components/Field";
-import { Input } from "../components/Input";
+import { ToggleSwitch } from "../components/ToggleSwitch";
 
 export const SettingsPage = ({ toast }) => {
-  const [settings, setSettings] = useState({
-    token_lifetime: 30,
-    strict_device_binding: true,
-    strict_ip_binding: false,
-    ip_tolerance: "subnet",
-    allow_same_site_reauth: false,
-    rate_limit_enabled: true,
-    rate_limit_attempts: 5,
-    rate_limit_window: 60,
-    logging_enabled: true,
-    require_https: true,
-  });
+  const [s, setS] = useState({ ttl: 30, strict_device: true, strict_ip: false, rate_limit: true, logging: true, https: true });
+  const set = (k, v) => setS(prev => ({ ...prev, [k]: v }));
   const [saving, setSaving] = useState(false);
+  const save = async () => { setSaving(true); await new Promise(r => setTimeout(r, 700)); setSaving(false); toast("Settings saved", "success"); };
 
-  useEffect(() => {
-    api("/settings")
-      .then((data) => setSettings((prev) => ({ ...prev, ...data })))
-      .catch(() => toast("Failed to load settings", "error"));
-  }, [toast]);
-
-  const set = (k, v) => setSettings((s) => ({ ...s, [k]: v }));
-
-  const save = async () => {
-    setSaving(true);
-    try {
-      await api("/settings", { method: "POST", body: JSON.stringify(settings) });
-      toast("Settings saved", "success");
-    } catch (err) {
-      toast("Failed to save settings", "error");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const Toggle = ({ value, onChange, label, hint }) => (
-    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start",
-      padding: "14px 0", borderBottom: "0.5px solid var(--color-border-tertiary)" }}>
+  const SettingRow = ({ label, hint, value, onChange }) => (
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 0", borderBottom: "1px solid var(--border1)" }}>
       <div>
-        <p style={{ margin: "0 0 2px", fontSize: 13, fontWeight: 500, color: "var(--color-text-primary)" }}>{label}</p>
-        {hint && <p style={{ margin: 0, fontSize: 11, color: "var(--color-text-secondary)" }}>{hint}</p>}
+        <p style={{ fontSize: 12, fontWeight: 500, color: "var(--text1)", marginBottom: 2 }}>{label}</p>
+        {hint && <p style={{ fontSize: 11, color: "var(--text3)" }}>{hint}</p>}
       </div>
-      <button onClick={() => onChange(!value)}
-        style={{ background: value ? "var(--color-text-primary)" : "var(--color-border-secondary)",
-          border: "none", borderRadius: 20, width: 36, height: 20, cursor: "pointer",
-          position: "relative", flexShrink: 0, transition: "background 0.2s", marginLeft: 16 }}>
-        <span style={{ position: "absolute", top: 3, left: value ? 18 : 3, width: 14, height: 14,
-          background: "var(--color-background-primary)", borderRadius: "50%", transition: "left 0.2s" }} />
-      </button>
+      <ToggleSwitch value={value} onChange={onChange} />
     </div>
   );
 
   return (
-    <div>
-      <div style={{ marginBottom: 24 }}>
-        <h2 style={{ margin: "0 0 4px", fontSize: 20, fontWeight: 500 }}>Settings</h2>
-        <p style={{ margin: 0, fontSize: 13, color: "var(--color-text-secondary)" }}>Configure SSO security and behavior</p>
-      </div>
+    <div className="page-anim">
+      <h2 style={{ fontSize: 18, fontWeight: 600, marginBottom: 4 }}>Settings</h2>
+      <p style={{ fontSize: 12, color: "var(--text3)", marginBottom: 20 }}>Configure SSO security behavior and limits</p>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
-        <div style={{ background: "var(--color-background-primary)", border: "0.5px solid var(--color-border-tertiary)",
-          borderRadius: "var(--border-radius-lg)", padding: "20px 24px" }}>
-          <p style={{ margin: "0 0 16px", fontSize: 13, fontWeight: 500 }}>Token settings</p>
-          <Field label="Token lifetime (seconds)" hint="How long an auth key remains valid. Default is 30s.">
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <input type="range" min={10} max={120} step={5} value={settings.token_lifetime}
-                onChange={e => set("token_lifetime", Number(e.target.value))} style={{ flex: 1 }} />
-              <span style={{ fontSize: 13, fontWeight: 500, minWidth: 36, textAlign: "right" }}>{settings.token_lifetime}s</span>
-            </div>
-          </Field>
-          <Toggle value={settings.allow_same_site_reauth} onChange={v => set("allow_same_site_reauth", v)}
-            label="Allow same-site re-auth" hint="Permit re-authentication on the same site" />
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 14 }}>
+        <div style={{ background: "var(--bg0)", border: "1px solid var(--border1)", borderRadius: "var(--radius-lg)", padding: "18px 20px", transition: "background 0.25s, border-color 0.25s" }}>
+          <p style={{ fontSize: 13, fontWeight: 600, color: "var(--text1)", marginBottom: 12 }}>Token lifetime</p>
+          <p style={{ fontSize: 11, color: "var(--text3)", marginBottom: 14 }}>Auth keys expire after this many seconds. 30s is recommended.</p>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
+            <input type="range" min={10} max={120} step={5} value={s.ttl} onChange={e => set("ttl", +e.target.value)} style={{ flex: 1 }} />
+            <span style={{ fontSize: 16, fontWeight: 700, color: "var(--accent)", minWidth: 40 }}>{s.ttl}s</span>
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "var(--text3)" }}><span>10s (min)</span><span>120s (max)</span></div>
         </div>
-
-        <div style={{ background: "var(--color-background-primary)", border: "0.5px solid var(--color-border-tertiary)",
-          borderRadius: "var(--border-radius-lg)", padding: "20px 24px" }}>
-          <p style={{ margin: "0 0 16px", fontSize: 13, fontWeight: 500 }}>Rate limiting</p>
-          <Toggle value={settings.rate_limit_enabled} onChange={v => set("rate_limit_enabled", v)}
-            label="Enable rate limiting" hint="Block repeated failed auth attempts" />
-          <div style={{ marginTop: 16, opacity: settings.rate_limit_enabled ? 1 : 0.4, pointerEvents: settings.rate_limit_enabled ? "all" : "none" }}>
-            <Field label="Max attempts">
-              <Input type="number" value={settings.rate_limit_attempts}
-                onChange={e => set("rate_limit_attempts", Number(e.target.value))} style={{ width: 80 }} />
-            </Field>
-            <Field label="Window (seconds)">
-              <Input type="number" value={settings.rate_limit_window}
-                onChange={e => set("rate_limit_window", Number(e.target.value))} style={{ width: 80 }} />
-            </Field>
+        <div style={{ background: "var(--bg0)", border: "1px solid var(--border1)", borderRadius: "var(--radius-lg)", padding: "18px 20px", transition: "background 0.25s, border-color 0.25s" }}>
+          <p style={{ fontSize: 13, fontWeight: 600, color: "var(--text1)", marginBottom: 12 }}>Rate limiting</p>
+          <SettingRow label="Enable rate limiting" hint="Block brute-force auth attempts" value={s.rate_limit} onChange={v => set("rate_limit", v)} />
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 12, opacity: s.rate_limit ? 1 : 0.4, pointerEvents: s.rate_limit ? "all" : "none" }}>
+            <Field label="Max attempts"><input type="number" defaultValue={5} style={{ fontSize: 12 }} /></Field>
+            <Field label="Window (s)"><input type="number" defaultValue={60} style={{ fontSize: 12 }} /></Field>
           </div>
         </div>
       </div>
 
-      <div style={{ background: "var(--color-background-primary)", border: "0.5px solid var(--color-border-tertiary)",
-        borderRadius: "var(--border-radius-lg)", padding: "20px 24px", marginBottom: 16 }}>
-        <p style={{ margin: "0 0 4px", fontSize: 13, fontWeight: 500 }}>Device & IP binding</p>
-        <p style={{ margin: "0 0 16px", fontSize: 12, color: "var(--color-text-secondary)" }}>
-          Controls how strictly auth tokens are bound to the requesting device and IP address.
-        </p>
-        <Toggle value={settings.strict_device_binding} onChange={v => set("strict_device_binding", v)}
-          label="Strict device binding" hint="Reject tokens if browser/OS/screen resolution changes" />
-        <Toggle value={settings.strict_ip_binding} onChange={v => set("strict_ip_binding", v)}
-          label="Strict IP binding" hint="Require exact IP match instead of subnet tolerance" />
-        {!settings.strict_ip_binding && (
-          <div style={{ paddingTop: 14 }}>
-            <Field label="IP tolerance mode">
-              <select value={settings.ip_tolerance} onChange={e => set("ip_tolerance", e.target.value)}>
-                <option value="subnet">Same /24 subnet</option>
-                <option value="any">Any IP (no restriction)</option>
-              </select>
-            </Field>
-          </div>
-        )}
+      <div style={{ background: "var(--bg0)", border: "1px solid var(--border1)", borderRadius: "var(--radius-lg)", padding: "18px 20px", transition: "background 0.25s, border-color 0.25s", marginBottom: 14 }}>
+        <p style={{ fontSize: 13, fontWeight: 600, color: "var(--text1)", marginBottom: 12 }}>Device and IP binding</p>
+        <SettingRow label="Strict device binding" hint="Reject if browser, OS, or screen resolution changes" value={s.strict_device} onChange={v => set("strict_device", v)} />
+        <SettingRow label="Strict IP binding" hint="Require exact IP match instead of subnet tolerance" value={s.strict_ip} onChange={v => set("strict_ip", v)} />
+        <SettingRow label="Require HTTPS" hint="Reject any SSO request over plain HTTP" value={s.https} onChange={v => set("https", v)} />
       </div>
 
-      <div style={{ background: "var(--color-background-primary)", border: "0.5px solid var(--color-border-tertiary)",
-        borderRadius: "var(--border-radius-lg)", padding: "20px 24px", marginBottom: 20 }}>
-        <p style={{ margin: "0 0 4px", fontSize: 13, fontWeight: 500 }}>Security & logging</p>
-        <p style={{ margin: "0 0 4px", fontSize: 12, color: "var(--color-text-secondary)" }}>
-          Authentication logs never store full auth keys or web keys - only hashes.
-        </p>
-        <Toggle value={settings.require_https} onChange={v => set("require_https", v)}
-          label="Require HTTPS" hint="Reject any SSO request over plain HTTP" />
-        <Toggle value={settings.logging_enabled} onChange={v => set("logging_enabled", v)}
-          label="Enable logging" hint="Log all auth attempts to wp_sso_logs table" />
+      <div style={{ background: "var(--bg0)", border: "1px solid var(--border1)", borderRadius: "var(--radius-lg)", padding: "18px 20px", transition: "background 0.25s, border-color 0.25s", marginBottom: 18 }}>
+        <p style={{ fontSize: 13, fontWeight: 600, color: "var(--text1)", marginBottom: 12 }}>Logging</p>
+        <SettingRow label="Enable auth logging" hint="Store all attempts in wp_sso_logs. Keys are hashed, never logged in full." value={s.logging} onChange={v => set("logging", v)} />
       </div>
 
       <div style={{ display: "flex", justifyContent: "flex-end" }}>

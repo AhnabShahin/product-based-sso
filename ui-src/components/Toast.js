@@ -1,26 +1,18 @@
 import { useEffect } from "@wordpress/element";
-import { Icon, Icons } from "./Icon";
+import { Ico, I } from "./Icon";
 
 export const Toast = ({ msg, type, onDismiss }) => {
-  useEffect(() => {
-    const t = setTimeout(onDismiss, 3200);
-    return () => clearTimeout(t);
-  }, [onDismiss]);
-
-  const colors = { success: "#1a7a3a", error: "#b91c1c", info: "#1e40af" };
-
+  useEffect(() => { const t = setTimeout(onDismiss, 2800); return () => clearTimeout(t); }, [onDismiss]);
+  const c = { success: "var(--success)", error: "var(--danger)", info: "var(--accent)" }[type] || "var(--accent)";
   return (
-    <div style={{ position: "fixed", top: 20, right: 20, zIndex: 9999, display: "flex", alignItems: "center",
-      gap: 10, background: "var(--color-background-primary)", border: "0.5px solid var(--color-border-secondary)",
-      borderLeft: `3px solid ${colors[type] || colors.info}`, borderRadius: "var(--border-radius-md)",
-      padding: "12px 16px", boxShadow: "none", maxWidth: 320, fontSize: 13 }}>
-      <span style={{ color: colors[type] || colors.info }}>
-        <Icon d={type === "success" ? Icons.check : type === "error" ? Icons.x : Icons.alert} size={14} />
-      </span>
-      <span style={{ color: "var(--color-text-primary)" }}>{msg}</span>
-      <button onClick={onDismiss} style={{ background: "none", border: "none", cursor: "pointer",
-        color: "var(--color-text-secondary)", padding: 0, lineHeight: 1, marginLeft: "auto" }}>
-        <Icon d={Icons.x} size={12} />
+    <div style={{ position: "fixed", top: 16, right: 16, zIndex: 9999, display: "flex", alignItems: "center",
+      gap: 8, background: "var(--bg0)", border: "1px solid var(--border2)", borderLeft: `3px solid ${c}`,
+      borderRadius: "var(--radius-md)", padding: "10px 14px", maxWidth: 280, fontSize: 12,
+      boxShadow: "0 4px 20px rgba(0,0,0,0.15)" }}>
+      <span style={{ color: c }}><Ico d={type === "success" ? I.check : I.x} size={13} /></span>
+      <span style={{ color: "var(--text1)" }}>{msg}</span>
+      <button onClick={onDismiss} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text3)", padding: 0, marginLeft: "auto" }}>
+        <Ico d={I.x} size={11} />
       </button>
     </div>
   );

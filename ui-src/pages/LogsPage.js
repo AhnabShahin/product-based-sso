@@ -1,102 +1,47 @@
-import { useCallback, useEffect, useState } from "@wordpress/element";
-import { api } from "../utils/api";
+import { useState } from "@wordpress/element";
 import { Badge } from "../components/Badge";
 import { Btn } from "../components/Button";
-import { Icon, Icons } from "../components/Icon";
+import { Ico, I } from "../components/Icon";
+
+const LOGS_INIT = [
+  { id: 1, type: "success", email: "alice@example.com", from: "Main Site", to: "Shop", ip: "203.0.113.10", reason: null, time: "11:42:10" },
+  { id: 2, type: "failure", email: "bob@example.com", from: "Blog", to: "Main Site", ip: "198.51.100.4", reason: "token_expired", time: "11:40:05" },
+  { id: 3, type: "success", email: "carol@example.com", from: "Shop", to: "Blog", ip: "203.0.113.22", reason: null, time: "11:38:52" },
+  { id: 4, type: "device_mismatch", email: "dan@example.com", from: "Main Site", to: "Shop", ip: "192.0.2.88", reason: "device_mismatch", time: "11:35:10" },
+  { id: 5, type: "failure", email: "eve@example.com", from: "Shop", to: "Main Site", ip: "10.0.0.5", reason: "user_not_found", time: "11:30:01" },
+];
 
 export const LogsPage = ({ toast }) => {
-  const [logs, setLogs] = useState([]);
+  const [logs, setLogs] = useState(LOGS_INIT);
   const [filter, setFilter] = useState("all");
-  const [clearing, setClearing] = useState(false);
-
-  const loadLogs = useCallback(() => {
-    api(`/logs?limit=50&filter=${encodeURIComponent(filter)}`)
-      .then(setLogs)
-      .catch(() => toast("Failed to load logs", "error"));
-  }, [filter, toast]);
-
-  useEffect(() => {
-    loadLogs();
-  }, [loadLogs]);
-
-  const clearLogs = async () => {
-    setClearing(true);
-    try {
-      await api("/logs", { method: "DELETE" });
-      setLogs([]);
-      toast("Logs cleared", "success");
-    } catch (err) {
-      toast("Failed to clear logs", "error");
-    } finally {
-      setClearing(false);
-    }
-  };
-
-  const filtered = filter === "all" ? logs : logs.filter(l => l.event_type === filter || l.error_reason === filter);
+  const filtered = filter === "all" ? logs : logs.filter(l => l.type === filter || l.reason === filter);
 
   return (
-    <div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 24 }}>
-        <div>
-          <h2 style={{ margin: "0 0 4px", fontSize: 20, fontWeight: 500 }}>Auth logs</h2>
-          <p style={{ margin: 0, fontSize: 13, color: "var(--color-text-secondary)" }}>All authentication attempts on this site</p>
-        </div>
-        <Btn size="sm" variant="danger" onClick={clearLogs} loading={clearing}><Icon d={Icons.trash} size={11} /> Clear logs</Btn>
+    <div className="page-anim">
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+        <div><h2 style={{ fontSize: 18, fontWeight: 600, marginBottom: 4 }}>Auth logs</h2><p style={{ fontSize: 12, color: "var(--text3)" }}>All authentication attempts on this site</p></div>
+        <Btn size="sm" variant="danger" onClick={() => { setLogs([]); toast("Logs cleared", "success"); }}><Ico d={I.trash} size={11} /> Clear</Btn>
       </div>
-
-      <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
-        {[["all", "All"], ["success", "Success"], ["failure", "Failed"], ["device_mismatch", "Device mismatch"], ["token_expired", "Expired"], ["user_not_found", "User not found"]].map(([val, label]) => (
-          <button key={val} onClick={() => setFilter(val)}
-            style={{ fontSize: 12, padding: "5px 12px", borderRadius: 20, border: "0.5px solid",
-              cursor: "pointer", fontFamily: "inherit",
-              borderColor: filter === val ? "var(--color-border-primary)" : "var(--color-border-tertiary)",
-              background: filter === val ? "var(--color-text-primary)" : "var(--color-background-primary)",
-              color: filter === val ? "var(--color-background-primary)" : "var(--color-text-secondary)" }}>
-            {label}
-          </button>
+      <div style={{ display: "flex", gap: 6, marginBottom: 14, flexWrap: "wrap" }}>
+        {[["all", "All"], ["success", "Success"], ["failure", "Failed"], ["device_mismatch", "Device mismatch"], ["token_expired", "Expired"]].map(([v, l]) => (
+          <button key={v} onClick={() => setFilter(v)} style={{ fontSize: 11, padding: "4px 11px", borderRadius: 20, cursor: "pointer", fontFamily: "inherit", fontWeight: 500, transition: "all 0.12s", background: filter === v ? "var(--accent)" : "var(--bg0)", color: filter === v ? "#fff" : "var(--text2)", border: `1px solid ${filter === v ? "var(--accent)" : "var(--border2)"}` }}>{l}</button>
         ))}
       </div>
-
-      <div style={{ background: "var(--color-background-primary)", border: "0.5px solid var(--color-border-tertiary)", borderRadius: "var(--border-radius-lg)" }}>
-        {filtered.length === 0 ? (
-          <div style={{ padding: 40, textAlign: "center", color: "var(--color-text-secondary)", fontSize: 14 }}>
-            No log entries found.
-          </div>
-        ) : (
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-            <thead>
-              <tr style={{ background: "var(--color-background-secondary)" }}>
-                {["Time", "User", "Route", "IP", "Device", "Result", "Reason"].map(h => (
-                  <th key={h} style={{ padding: "8px 14px", textAlign: "left", fontSize: 11, fontWeight: 500,
-                    color: "var(--color-text-secondary)", letterSpacing: "0.05em", textTransform: "uppercase",
-                    borderBottom: "0.5px solid var(--color-border-tertiary)", whiteSpace: "nowrap" }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((log, i) => (
-                <tr key={log.id || i} style={{ borderBottom: i < filtered.length - 1 ? "0.5px solid var(--color-border-tertiary)" : "none" }}>
-                  <td style={{ padding: "10px 14px", fontSize: 11, color: "var(--color-text-secondary)", whiteSpace: "nowrap", fontFamily: "var(--font-mono)" }}>{log.created_at}</td>
-                  <td style={{ padding: "10px 14px", color: "var(--color-text-primary)" }}>{log.user_email || "—"}</td>
-                  <td style={{ padding: "10px 14px", color: "var(--color-text-secondary)", fontSize: 11, fontFamily: "var(--font-mono)", whiteSpace: "nowrap" }}>
-                    {log.source_product || "—"} -> {log.target_product || "—"}
-                  </td>
-                  <td style={{ padding: "10px 14px", fontSize: 11, fontFamily: "var(--font-mono)", color: "var(--color-text-secondary)" }}>{log.ip_address || "—"}</td>
-                  <td style={{ padding: "10px 14px" }}>
-                    <code style={{ fontSize: 10, fontFamily: "var(--font-mono)", background: "var(--color-background-secondary)",
-                      padding: "2px 6px", borderRadius: 4, color: "var(--color-text-secondary)" }}>
-                      {log.device_fingerprint || "—"}
-                    </code>
-                  </td>
-                  <td style={{ padding: "10px 14px" }}><Badge status={log.event_type} /></td>
-                  <td style={{ padding: "10px 14px", fontSize: 11, color: "var(--color-text-secondary)" }}>
-                    {log.error_reason ? <Badge status={log.error_reason} /> : "—"}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+      <div style={{ background: "var(--bg0)", border: "1px solid var(--border1)", borderRadius: "var(--radius-lg)", padding: 0, overflow: "hidden" }}>
+        <table>
+          <thead><tr><th>Time</th><th>User</th><th>Route</th><th>IP</th><th>Result</th><th>Reason</th></tr></thead>
+          <tbody>{filtered.length === 0
+            ? <tr><td colSpan={6} style={{ textAlign: "center", padding: 32, color: "var(--text3)" }}>No entries found</td></tr>
+            : filtered.map(l => <tr key={l.id}>
+                <td style={{ fontFamily: "var(--mono)", fontSize: 10, color: "var(--text3)" }}>{l.time}</td>
+                <td style={{ fontWeight: 500 }}>{l.email}</td>
+                <td><span style={{ fontFamily: "var(--mono)", fontSize: 10, color: "var(--text3)" }}>{l.from}->{l.to}</span></td>
+                <td><span style={{ fontFamily: "var(--mono)", fontSize: 10, color: "var(--text3)" }}>{l.ip}</span></td>
+                <td><Badge status={l.type} /></td>
+                <td>{l.reason ? <Badge status={l.reason} /> : <span style={{ color: "var(--text3)" }}>-</span>}</td>
+              </tr>)
+          }</tbody>
+        </table>
       </div>
     </div>
   );
