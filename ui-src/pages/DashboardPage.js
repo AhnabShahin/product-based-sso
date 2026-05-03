@@ -3,6 +3,7 @@ import { api } from "../utils/api";
 import { Badge } from "../components/Badge";
 import { Ico, I } from "../components/Icon";
 import { StatCard } from "../components/StatCard";
+import ProductSwitcher from "../components/ProductSwitcher";
 
 export const DashboardPage = ({ toast }) => {
   const [site, setSite] = useState({ name: "", url: "", webKeySet: false, activeProducts: 0 });
@@ -33,9 +34,14 @@ export const DashboardPage = ({ toast }) => {
   }, [toast]);
 
   return (
-    <div className="page-anim">
-      <h2 style={{ fontSize: 18, fontWeight: 600, marginBottom: 4 }}>Dashboard</h2>
-      <p style={{ fontSize: 12, color: "var(--text3)", marginBottom: 20 }}>SSO activity overview for this site</p>
+    <div className="page-anim" style={{ position: "relative", paddingTop: 6 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 20 }}>
+        <div>
+          <h2 style={{ fontSize: 18, fontWeight: 600, marginBottom: 4 }}>Dashboard</h2>
+          <p style={{ fontSize: 12, color: "var(--text3)", marginBottom: 0 }}>SSO activity overview for this site</p>
+        </div>
+        <ProductSwitcher inline />
+      </div>
 
       <div style={{ background: "var(--bg0)", border: "1px solid var(--border1)", borderRadius: "var(--radius-lg)", padding: "18px 20px", transition: "background 0.25s, border-color 0.25s", display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>

@@ -6,6 +6,7 @@ import { ProductsPage } from "./pages/ProductsPage";
 import { WebKeyPage } from "./pages/WebKeyPage";
 import { LogsPage } from "./pages/LogsPage";
 import { SettingsPage } from "./pages/SettingsPage";
+// ProductSwitcher is now rendered inside the Dashboard page header
 
 const useTheme = () => {
   const [theme, setTheme] = useState(() => {
