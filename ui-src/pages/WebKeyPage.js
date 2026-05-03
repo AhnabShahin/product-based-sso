@@ -1,14 +1,21 @@
-import { useState } from "@wordpress/element";
+import { useEffect, useState } from "@wordpress/element";
+import { api } from "../utils/api";
 import { Btn } from "../components/Button";
 import { Field } from "../components/Field";
 import { Ico, I } from "../components/Icon";
 
 export const WebKeyPage = ({ toast }) => {
-  const [webKey] = useState("wk_9f2a1b3c4d5e6f7a8b9c0d1e2f3a4b5c");
+  const [webKey, setWebKey] = useState("");
   const [visible, setVisible] = useState(false);
   const [pin, setPin] = useState("");
   const [copied, setCopied] = useState(false);
   const [regen, setRegen] = useState(false);
+
+  useEffect(() => {
+    api("/web-key")
+      .then((data) => setWebKey(data.web_key || ""))
+      .catch(() => toast("Failed to load web key", "error"));
+  }, [toast]);
 
   const copyKey = async () => {
     await navigator.clipboard.writeText(webKey).catch(() => {});
@@ -17,9 +24,18 @@ export const WebKeyPage = ({ toast }) => {
   };
   const regenKey = async () => {
     if (pin.length < 4) { toast("PIN must be at least 4 characters", "error"); return; }
-    setRegen(true); await new Promise(r => setTimeout(r, 800)); setRegen(false);
-    setPin(""); setVisible(false);
-    toast("Web key regenerated successfully", "success");
+    setRegen(true);
+    try {
+      const data = await api("/web-key", { method: "POST", body: JSON.stringify({ pin }) });
+      setWebKey(data.web_key || "");
+      setPin("");
+      setVisible(false);
+      toast("Web key regenerated successfully", "success");
+    } catch (err) {
+      toast("Failed to regenerate web key", "error");
+    } finally {
+      setRegen(false);
+    }
   };
 
   return (
@@ -31,7 +47,7 @@ export const WebKeyPage = ({ toast }) => {
         <div style={{ background: "var(--bg0)", border: "1px solid var(--border1)", borderRadius: "var(--radius-lg)", padding: "18px 20px", transition: "background 0.25s, border-color 0.25s" }}>
           <p style={{ fontSize: 13, fontWeight: 600, color: "var(--text1)", marginBottom: 12 }}>Current web key</p>
           <div style={{ background: "var(--bg2)", borderRadius: "var(--radius-sm)", padding: "10px 12px", fontFamily: "var(--mono)", fontSize: 11, wordBreak: "break-all", marginBottom: 12, letterSpacing: "0.04em" }}>
-            {visible ? webKey : "wk_" + "*".repeat(webKey.length - 3)}
+            {webKey ? (visible ? webKey : `${webKey.slice(0, 3)}${"*".repeat(Math.max(webKey.length - 3, 4))}`) : "-"}
           </div>
           <div style={{ display: "flex", gap: 7 }}>
             <Btn size="sm" onClick={() => setVisible(v => !v)}><Ico d={visible ? I.eyeOff : I.eye} size={11} />{visible ? " Hide" : " Reveal"}</Btn>
