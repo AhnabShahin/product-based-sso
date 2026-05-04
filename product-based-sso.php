@@ -71,6 +71,7 @@ class ProductBasedSSO_Plugin
             ProductBasedSSO\Controllers\WebKeyController::getInstance()->registerRoutes();
             ProductBasedSSO\Controllers\LogsController::getInstance()->registerRoutes();
             ProductBasedSSO\Controllers\SettingsController::getInstance()->registerRoutes();
+            ProductBasedSSO\Controllers\SwitchController::getInstance()->registerRoutes();
         });
 
         add_filter('query_vars', array($this, 'registerQueryVars'));
@@ -78,7 +79,6 @@ class ProductBasedSSO_Plugin
         add_action('template_redirect', array(ProductBasedSSO\Controllers\SwitchController::getInstance(), 'handleSwitchRequest'));
 
         add_shortcode('product_sso_switcher', array(ProductBasedSSO\Controllers\SwitchController::getInstance(), 'renderSwitcher'));
-        add_action('wp_enqueue_scripts', array(ProductBasedSSO\Controllers\SwitchController::getInstance(), 'enqueueAssets'));
     }
 
     public function activate()

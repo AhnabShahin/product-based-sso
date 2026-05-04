@@ -13,7 +13,20 @@ export const api = async (path, options = {}) => {
 
   if (!response.ok) {
     const text = await response.text();
-    throw new Error(text || "Request failed");
+    let message = text || "Request failed";
+
+    try {
+      const parsed = JSON.parse(text);
+      if (parsed?.message) {
+        message = parsed.message;
+      } else if (parsed?.code) {
+        message = parsed.code;
+      }
+    } catch (error) {
+      // Ignore JSON parse failures and keep raw response text.
+    }
+
+    throw new Error(message);
   }
 
   return response.json();

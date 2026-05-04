@@ -28,7 +28,7 @@ class ValidationService
         return $data;
     }
 
-    public function validate($authKey, $currentWebKey, $currentHost, $deviceFingerprint, $ip, $userAgent)
+    public function validate($authKey, $currentWebKey, $currentHost, $context = array())
     {
         $settings = SettingsRepository::getInstance()->getSettings();
         $data = $this->decodeAuthKey($authKey);
@@ -36,8 +36,19 @@ class ValidationService
             return array('ok' => false, 'reason' => 'invalid_key');
         }
 
+        $context = is_array($context) ? $context : array();
+        $deviceFingerprint = isset($context['device_fingerprint']) ? (string) $context['device_fingerprint'] : '';
+        $ip = isset($context['ip']) ? (string) $context['ip'] : '';
+        $userAgent = isset($context['user_agent']) ? (string) $context['user_agent'] : '';
+        $browser = isset($context['browser']) ? (string) $context['browser'] : '';
+        $os = isset($context['os']) ? (string) $context['os'] : '';
+        $screenResolution = isset($context['screen_resolution']) ? (string) $context['screen_resolution'] : '';
+        $acceptLanguage = isset($context['accept_language']) ? (string) $context['accept_language'] : '';
+        $isSsl = !empty($context['is_ssl']);
+
         $payload = $data['payload'];
         $signature = $data['signature'];
+        $securityControls = !empty($payload['security_controls']) && is_array($payload['security_controls']) ? $payload['security_controls'] : array();
 
         $payloadJson = wp_json_encode($payload, JSON_UNESCAPED_SLASHES);
         $expectedSignature = hash_hmac('sha256', $payloadJson, (string) $currentWebKey);
@@ -50,6 +61,18 @@ class ValidationService
             return array('ok' => false, 'reason' => 'token_expired');
         }
 
+        if (in_array('https_only', $securityControls, true) && !$isSsl) {
+            return array('ok' => false, 'reason' => 'https_required');
+        }
+
+        if (!empty($payload['target_web_key_hash']) && !hash_equals((string) $payload['target_web_key_hash'], hash('sha256', (string) $currentWebKey))) {
+            return array('ok' => false, 'reason' => 'invalid_web_key');
+        }
+
+        if (empty($payload['nonce'])) {
+            return array('ok' => false, 'reason' => 'invalid_nonce');
+        }
+
         if (!empty($payload['to_product_url'])) {
             $targetHost = wp_parse_url($payload['to_product_url'], PHP_URL_HOST);
             if ($targetHost && strtolower($targetHost) !== strtolower($currentHost)) {
@@ -57,18 +80,34 @@ class ValidationService
             }
         }
 
-        if (!empty($settings['strict_device_binding'])) {
-            if (!empty($payload['device_fingerprint']) && $payload['device_fingerprint'] !== $deviceFingerprint) {
+        if (in_array('strict_device_binding', $securityControls, true)) {
+            if (!empty($payload['device_fingerprint']) && !empty($deviceFingerprint) && $payload['device_fingerprint'] !== $deviceFingerprint) {
                 return array('ok' => false, 'reason' => 'device_mismatch');
             }
 
-            if (!empty($payload['user_agent']) && $payload['user_agent'] !== $userAgent) {
+            if (!empty($payload['user_agent']) && !empty($userAgent) && $payload['user_agent'] !== $userAgent) {
+                return array('ok' => false, 'reason' => 'device_mismatch');
+            }
+
+            if (!empty($payload['browser']) && !empty($browser) && strtolower($payload['browser']) !== strtolower($browser)) {
+                return array('ok' => false, 'reason' => 'device_mismatch');
+            }
+
+            if (!empty($payload['os']) && !empty($os) && strtolower($payload['os']) !== strtolower($os)) {
+                return array('ok' => false, 'reason' => 'device_mismatch');
+            }
+
+            if (!empty($payload['screen_resolution']) && !empty($screenResolution) && $payload['screen_resolution'] !== $screenResolution) {
+                return array('ok' => false, 'reason' => 'device_mismatch');
+            }
+
+            if (!empty($payload['accept_language']) && !empty($acceptLanguage) && strtolower($payload['accept_language']) !== strtolower($acceptLanguage)) {
                 return array('ok' => false, 'reason' => 'device_mismatch');
             }
         }
 
-        if (!empty($settings['strict_ip_binding'])) {
-            if (!empty($payload['ip']) && $payload['ip'] !== $ip) {
+        if (in_array('exact_ip_match', $securityControls, true)) {
+            if (!empty($payload['ip']) && !empty($ip) && $payload['ip'] !== $ip) {
                 return array('ok' => false, 'reason' => 'ip_mismatch');
             }
         } elseif (!empty($payload['ip']) && !empty($settings['ip_tolerance']) && $settings['ip_tolerance'] === 'subnet') {

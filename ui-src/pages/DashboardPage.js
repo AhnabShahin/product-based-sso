@@ -40,7 +40,7 @@ export const DashboardPage = ({ toast }) => {
           <h2 style={{ fontSize: 18, fontWeight: 600, marginBottom: 4 }}>Dashboard</h2>
           <p style={{ fontSize: 12, color: "var(--text3)", marginBottom: 0 }}>SSO activity overview for this site</p>
         </div>
-        <ProductSwitcher inline />
+        <ProductSwitcher inline toast={toast} />
       </div>
 
       <div style={{ background: "var(--bg0)", border: "1px solid var(--border1)", borderRadius: "var(--radius-lg)", padding: "18px 20px", transition: "background 0.25s, border-color 0.25s", display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
@@ -76,7 +76,7 @@ export const DashboardPage = ({ toast }) => {
             ) : recentLogs.slice(0, 4).map((log, i) => (
               <tr key={log.id || i}>
                 <td style={{ fontWeight: 500 }}>{log.user_email || "-"}</td>
-                <td><span style={{ fontFamily: "var(--mono)", fontSize: 10, color: "var(--text3)" }}>{log.source_product || "-"} -> {log.target_product || "-"}</span></td>
+                <td><span style={{ fontFamily: "var(--mono)", fontSize: 10, color: "var(--text3)" }}>{log.source_product || "-"}{" -> "}{log.target_product || "-"}</span></td>
                 <td><Badge status={log.error_reason || log.event_type} /></td>
                 <td><span style={{ fontFamily: "var(--mono)", fontSize: 10, color: "var(--text3)" }}>{log.ip_address || "-"}</span></td>
                 <td style={{ color: "var(--text3)", fontSize: 11 }}>{(log.created_at || "").split(" ")[1] || "-"}</td>

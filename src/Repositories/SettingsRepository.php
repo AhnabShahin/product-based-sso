@@ -16,6 +16,7 @@ class SettingsRepository
     {
         $defaults = array(
             'token_lifetime' => 30,
+            'open_product_target' => 'self',
             'strict_device_binding' => true,
             'strict_ip_binding' => false,
             'ip_tolerance' => 'subnet',

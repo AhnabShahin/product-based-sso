@@ -7,6 +7,7 @@ import { ToggleSwitch } from "../components/ToggleSwitch";
 export const SettingsPage = ({ toast }) => {
   const [settings, setSettings] = useState({
     token_lifetime: 30,
+    open_product_target: "self",
     strict_device_binding: true,
     strict_ip_binding: false,
     ip_tolerance: "subnet",
@@ -64,6 +65,14 @@ export const SettingsPage = ({ toast }) => {
           <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "var(--text3)" }}><span>10s (min)</span><span>120s (max)</span></div>
           <div style={{ paddingTop: 10 }}>
             <SettingRow label="Allow same-site re-auth" hint="Permit re-authentication on the same site" value={settings.allow_same_site_reauth} onChange={v => set("allow_same_site_reauth", v)} />
+          </div>
+          <div style={{ paddingTop: 12 }}>
+            <Field label="Open switched product in">
+              <select value={settings.open_product_target} onChange={e => set("open_product_target", e.target.value)}>
+                <option value="self">Current tab</option>
+                <option value="new_tab">New tab</option>
+              </select>
+            </Field>
           </div>
         </div>
         <div style={{ background: "var(--bg0)", border: "1px solid var(--border1)", borderRadius: "var(--radius-lg)", padding: "18px 20px", transition: "background 0.25s, border-color 0.25s" }}>

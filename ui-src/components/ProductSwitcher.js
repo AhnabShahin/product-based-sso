@@ -4,18 +4,74 @@ import { Ico, I } from "./Icon";
 
 const SSO_STEPS = [
   "Verifying your session",
-  "Generating auth token",
-  "Encrypting with HMAC-SHA256",
-  "Redirecting securely…",
+  "Collecting browser, OS, IP, and screen details",
+  "Generating signed auth token with nonce and web key",
+  "Redirecting with secure auth_token",
 ];
 
-export const ProductSwitcher = ({ inline = false }) => {
+const getBrowserName = () => {
+  const ua = navigator.userAgent || "";
+  if (ua.includes("Edg/")) return "Edge";
+  if (ua.includes("OPR/")) return "Opera";
+  if (ua.includes("Chrome/")) return "Chrome";
+  if (ua.includes("Firefox/")) return "Firefox";
+  if (ua.includes("Safari/")) return "Safari";
+  return "Unknown";
+};
+
+const getOsName = () => {
+  const platform = `${navigator.userAgent || ""} ${navigator.platform || ""}`.toLowerCase();
+  if (platform.includes("win")) return "Windows";
+  if (platform.includes("mac")) return "macOS";
+  if (platform.includes("android")) return "Android";
+  if (platform.includes("iphone") || platform.includes("ipad") || platform.includes("ios")) return "iOS";
+  if (platform.includes("linux")) return "Linux";
+  return "Unknown";
+};
+
+const hash = (input) => {
+  let h = 5381;
+  for (let i = 0; i < input.length; i++) h = (h * 33) ^ input.charCodeAt(i);
+  return (h >>> 0).toString(16);
+};
+
+const DEVICE_PARAMS = ["device_fingerprint", "browser", "os", "platform", "screen_resolution", "timezone", "accept_language"];
+
+const cleanRedirectUrl = (url) => {
+  try {
+    const u = new URL(url);
+    DEVICE_PARAMS.forEach((p) => u.searchParams.delete(p));
+    return u.toString();
+  } catch {
+    return url;
+  }
+};
+
+const collectDeviceContext = () => {
+  const screenResolution = `${window.screen?.width || 0}x${window.screen?.height || 0}`;
+  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
+  const acceptLanguage = navigator.language || "";
+  const platform = navigator.platform || "";
+  const userAgent = navigator.userAgent || "";
+  const deviceFingerprint = hash([userAgent, acceptLanguage, platform, screenResolution, timezone].join("|"));
+
+  return {
+    browser: getBrowserName(),
+    os: getOsName(),
+    platform,
+    screen_resolution: screenResolution,
+    timezone,
+    accept_language: acceptLanguage,
+    device_fingerprint: deviceFingerprint,
+  };
+};
+
+export const ProductSwitcher = ({ inline = false, toast }) => {
   const [open, setOpen] = useState(false);
   const [products, setProducts] = useState([]);
   const [ssoTarget, setSsoTarget] = useState(null);
   const [step, setStep] = useState(0);
   const wrapRef = useRef(null);
-  const newTabRef = useRef(null);
 
   useEffect(() => {
     let mounted = true;
@@ -32,25 +88,67 @@ export const ProductSwitcher = ({ inline = false }) => {
   useEffect(() => {
     if (!ssoTarget) return;
     setStep(0);
+    let cancelled = false;
     const timers = [];
-    SSO_STEPS.forEach((_, i) => {
-      timers.push(setTimeout(() => setStep(i), 600 * (i + 1)));
-    });
-    // final redirect
-    timers.push(setTimeout(() => {
-      try { if (newTabRef.current) newTabRef.current.location.href = ssoTarget.page_url || ssoTarget.domain || "/"; }
-      catch (err) { /* ignore */ }
-      newTabRef.current = null;
-      setSsoTarget(null);
-      setStep(0);
-    }, 600 * (SSO_STEPS.length + 1)));
 
-    return () => timers.forEach(t => clearTimeout(t));
+    // Advance step after each interval; setStep(i+1) so reaching SSO_STEPS.length means all done
+    SSO_STEPS.forEach((_, i) =>
+      timers.push(setTimeout(() => { if (!cancelled) setStep(i + 1); }, 600 * (i + 1)))
+    );
+
+    let pendingData = null;
+    let stepsComplete = false;
+
+    const doRedirect = (data) => {
+      if (cancelled) return;
+      const url = cleanRedirectUrl(data.redirect_url);
+      if (data.open_target === "new_tab") {
+        // window.open() with "noopener" always returns null by spec — never use
+        // the return value to detect popup blocking when noopener is present.
+        window.open(url, "_blank", "noopener,noreferrer");
+        setSsoTarget(null); // close modal; current tab stays untouched
+      } else {
+        window.location.href = url;
+      }
+    };
+
+    // Fire redirect only after all step animations finish
+    timers.push(setTimeout(() => {
+      stepsComplete = true;
+      if (pendingData) doRedirect(pendingData);
+    }, 600 * SSO_STEPS.length + 200));
+
+    api("/switch-token", {
+      method: "POST",
+      body: JSON.stringify({ product_id: ssoTarget.id, ...collectDeviceContext() }),
+    })
+      .then((data) => {
+        if (cancelled || !data?.redirect_url) return;
+        if (stepsComplete) {
+          doRedirect(data);
+        } else {
+          pendingData = data;
+        }
+      })
+      .catch((error) => {
+        if (cancelled) return;
+        const message = error?.message || "Failed to generate SSO auth token.";
+        if (typeof toast === "function") {
+          toast(message, "error");
+        } else {
+          window.alert(message);
+        }
+        setSsoTarget(null);
+        setStep(0);
+      });
+
+    return () => {
+      cancelled = true;
+      timers.forEach(t => clearTimeout(t));
+    };
   }, [ssoTarget]);
 
   const handleSwitch = (p) => {
-    // open blank tab synchronously to avoid popup blockers, then show overlay
-    try { newTabRef.current = window.open("", "_blank"); } catch (err) { newTabRef.current = null; }
     setSsoTarget(p);
   };
 
@@ -79,7 +177,7 @@ export const ProductSwitcher = ({ inline = false }) => {
             <div style={{ padding: 8, display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 6 }}>
               {active.length === 0 ? (
                 <div style={{ padding: 16, textAlign: "center", color: "var(--text3)", fontSize: 12 }}>No active products</div>
-              ) : active.map((p, i) => (
+              ) : active.map((p) => (
                 <button key={p.id} onClick={() => { handleSwitch(p); setOpen(false); }}
                   style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, padding: 12, borderRadius: 10, background: "transparent", border: "none", cursor: "pointer" }}>
                   <div style={{ width: 48, height: 48, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", background: "linear-gradient(135deg,#1d4ed8,#3b82f6)", color: "#fff", fontWeight: 800 }}>{(p.name||"").split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase()}</div>
@@ -88,7 +186,7 @@ export const ProductSwitcher = ({ inline = false }) => {
               ))}
             </div>
             <div style={{ height: 1, background: "var(--border1)", margin: "6px 0" }} />
-            <div style={{ padding: 8, fontSize: 11, color: "var(--text3)", textAlign: "center" }}><Ico d={I.shield} size={10}/> Auth tokens expire in 30s · HMAC-SHA256</div>
+            <div style={{ padding: 8, fontSize: 11, color: "var(--text3)", textAlign: "center" }}><Ico d={I.shield} size={10}/> Auth token carries IP, browser, screen, nonce · HMAC-SHA256</div>
           </div>
         )}
 
