@@ -1,1 +1,27 @@
-node_modules
+# Node dependencies
+node_modules/
+
+# Built assets
+ui-src-build/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor settings
+.vscode/
+.idea/
+
+# Environment files
+.env
+*.env
+
+# Build/cache directories
+dist/
+build/
+.sass-cache/
