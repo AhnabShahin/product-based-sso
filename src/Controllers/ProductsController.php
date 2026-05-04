@@ -77,6 +77,7 @@ class ProductsController
             'logo_url' => isset($data['logo_url']) ? esc_url_raw($data['logo_url']) : '',
             'page_url' => isset($data['page_url']) ? esc_url_raw($data['page_url']) : '',
             'web_key' => isset($data['web_key']) ? sanitize_text_field($data['web_key']) : '',
+            'pin' => isset($data['pin']) ? sanitize_text_field($data['pin']) : '',
             'is_active' => isset($data['is_active']) ? (bool) $data['is_active'] : true,
         );
     }

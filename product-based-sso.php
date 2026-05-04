@@ -72,6 +72,7 @@ class ProductBasedSSO_Plugin
             ProductBasedSSO\Controllers\LogsController::getInstance()->registerRoutes();
             ProductBasedSSO\Controllers\SettingsController::getInstance()->registerRoutes();
             ProductBasedSSO\Controllers\SwitchController::getInstance()->registerRoutes();
+            ProductBasedSSO\Controllers\ValidateController::getInstance()->registerRoutes();
         });
 
         add_filter('query_vars', array($this, 'registerQueryVars'));

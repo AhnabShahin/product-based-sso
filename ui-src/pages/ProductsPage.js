@@ -14,7 +14,7 @@ export const ProductsPage = ({ toast }) => {
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState(null);
   const [deleteId, setDeleteId] = useState(null);
-  const [form, setForm] = useState({ name: "", page_url: "", web_key: "", is_active: true });
+  const [form, setForm] = useState({ name: "", page_url: "", web_key: "", pin: "", is_active: true });
   const [saving, setSaving] = useState(false);
 
   const loadProducts = useCallback(() => {
@@ -27,7 +27,7 @@ export const ProductsPage = ({ toast }) => {
     loadProducts();
   }, [loadProducts]);
 
-  const openAdd = () => { setForm({ name: "", page_url: "", web_key: "", is_active: true }); setEditId(null); setShowForm(true); };
+  const openAdd = () => { setForm({ name: "", page_url: "", web_key: "", pin: "", is_active: true }); setEditId(null); setShowForm(true); };
   const openEdit = p => { setForm({ ...p }); setEditId(p.id); setShowForm(true); };
   const save = async () => {
     if (!form.name || !form.page_url || !form.web_key) { toast("Fill in all required fields", "error"); return; }
@@ -67,6 +67,9 @@ export const ProductsPage = ({ toast }) => {
           <Field label="Web key (from target site) *" hint="Paste the web key generated on the target site's SSO settings page.">
             <input type="password" value={form.web_key} onChange={e => setForm(f => ({ ...f, web_key: e.target.value }))} placeholder="wk_xxxxxxxxxxxxxxxx" />
           </Field>
+          <Field label="PIN (from target site)" hint="The PIN set on the target site. Used to AES-encrypt auth tokens sent to that site.">
+            <input type="password" value={form.pin} onChange={e => setForm(f => ({ ...f, pin: e.target.value }))} placeholder="Target site's PIN" />
+          </Field>
           <Field label="Status">
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <ToggleSwitch value={form.is_active} onChange={v => setForm(f => ({ ...f, is_active: v }))} />
@@ -85,7 +88,7 @@ export const ProductsPage = ({ toast }) => {
           <div style={{ padding: 32, textAlign: "center", color: "var(--text3)", fontSize: 12 }}>No products yet. Add a remote site to get started.</div>
         ) : (
           <table>
-            <thead><tr><th>Product</th><th>Page URL</th><th>Web key</th><th>Status</th><th>Added</th><th>Actions</th></tr></thead>
+            <thead><tr><th>Product</th><th>Page URL</th><th>Web key</th><th>PIN</th><th>Status</th><th>Added</th><th>Actions</th></tr></thead>
             <tbody>{products.map((p, i) => {
               const [bg, color] = AVATAR_COLORS[i % AVATAR_COLORS.length];
               const name = p.name || "Untitled";
@@ -102,6 +105,7 @@ export const ProductsPage = ({ toast }) => {
                 </td>
                 <td>{pageUrl ? <a href={pageUrl} style={{ fontFamily: "var(--mono)", fontSize: 10 }} target="_blank" rel="noopener noreferrer">{pageUrl.replace("https://", "")}</a> : "-"}</td>
                 <td><code>{maskedKey}</code></td>
+                <td style={{ fontSize: 11, color: p.pin ? "var(--success, #22c55e)" : "var(--text3)" }}>{p.pin ? "Set" : "Not set"}</td>
                 <td><Badge status={p.is_active ? "active" : "inactive"} /></td>
                 <td style={{ color: "var(--text3)", fontSize: 11 }}>{p.created_at || "-"}</td>
                 <td>

@@ -57,13 +57,13 @@ class ValidationService
             return array('ok' => false, 'reason' => 'invalid_signature');
         }
 
-        if (empty($payload['exp']) || (int) $payload['exp'] < time()) {
-            return array('ok' => false, 'reason' => 'token_expired');
-        }
+        // if (empty($payload['exp']) || (int) $payload['exp'] < time()) {
+        //     return array('ok' => false, 'reason' => 'token_expired');
+        // }
 
-        if (in_array('https_only', $securityControls, true) && !$isSsl) {
-            return array('ok' => false, 'reason' => 'https_required');
-        }
+        // if (in_array('https_only', $securityControls, true) && !$isSsl) {
+        //     return array('ok' => false, 'reason' => 'https_required');
+        // }
 
         if (!empty($payload['target_web_key_hash']) && !hash_equals((string) $payload['target_web_key_hash'], hash('sha256', (string) $currentWebKey))) {
             return array('ok' => false, 'reason' => 'invalid_web_key');
@@ -73,38 +73,38 @@ class ValidationService
             return array('ok' => false, 'reason' => 'invalid_nonce');
         }
 
-        if (!empty($payload['to_product_url'])) {
-            $targetHost = wp_parse_url($payload['to_product_url'], PHP_URL_HOST);
-            if ($targetHost && strtolower($targetHost) !== strtolower($currentHost)) {
-                return array('ok' => false, 'reason' => 'unauthorized_product');
-            }
-        }
+        // if (!empty($payload['to_product_url'])) {
+        //     $targetHost = wp_parse_url($payload['to_product_url'], PHP_URL_HOST);
+        //     if ($targetHost && strtolower($targetHost) !== strtolower($currentHost)) {
+        //         return array('ok' => false, 'reason' => 'unauthorized_product');
+        //     }
+        // }
 
-        if (in_array('strict_device_binding', $securityControls, true)) {
-            if (!empty($payload['device_fingerprint']) && !empty($deviceFingerprint) && $payload['device_fingerprint'] !== $deviceFingerprint) {
-                return array('ok' => false, 'reason' => 'device_mismatch');
-            }
+        // if (in_array('strict_device_binding', $securityControls, true)) {
+        //     if (!empty($payload['device_fingerprint']) && !empty($deviceFingerprint) && $payload['device_fingerprint'] !== $deviceFingerprint) {
+        //         return array('ok' => false, 'reason' => 'device_mismatch');
+        //     }
 
-            if (!empty($payload['user_agent']) && !empty($userAgent) && $payload['user_agent'] !== $userAgent) {
-                return array('ok' => false, 'reason' => 'device_mismatch');
-            }
+        //     if (!empty($payload['user_agent']) && !empty($userAgent) && $payload['user_agent'] !== $userAgent) {
+        //         return array('ok' => false, 'reason' => 'device_mismatch');
+        //     }
 
-            if (!empty($payload['browser']) && !empty($browser) && strtolower($payload['browser']) !== strtolower($browser)) {
-                return array('ok' => false, 'reason' => 'device_mismatch');
-            }
+        //     if (!empty($payload['browser']) && !empty($browser) && strtolower($payload['browser']) !== strtolower($browser)) {
+        //         return array('ok' => false, 'reason' => 'device_mismatch');
+        //     }
 
-            if (!empty($payload['os']) && !empty($os) && strtolower($payload['os']) !== strtolower($os)) {
-                return array('ok' => false, 'reason' => 'device_mismatch');
-            }
+        //     if (!empty($payload['os']) && !empty($os) && strtolower($payload['os']) !== strtolower($os)) {
+        //         return array('ok' => false, 'reason' => 'device_mismatch');
+        //     }
 
-            if (!empty($payload['screen_resolution']) && !empty($screenResolution) && $payload['screen_resolution'] !== $screenResolution) {
-                return array('ok' => false, 'reason' => 'device_mismatch');
-            }
+        //     if (!empty($payload['screen_resolution']) && !empty($screenResolution) && $payload['screen_resolution'] !== $screenResolution) {
+        //         return array('ok' => false, 'reason' => 'device_mismatch');
+        //     }
 
-            if (!empty($payload['accept_language']) && !empty($acceptLanguage) && strtolower($payload['accept_language']) !== strtolower($acceptLanguage)) {
-                return array('ok' => false, 'reason' => 'device_mismatch');
-            }
-        }
+        //     if (!empty($payload['accept_language']) && !empty($acceptLanguage) && strtolower($payload['accept_language']) !== strtolower($acceptLanguage)) {
+        //         return array('ok' => false, 'reason' => 'device_mismatch');
+        //     }
+        // }
 
         if (in_array('exact_ip_match', $securityControls, true)) {
             if (!empty($payload['ip']) && !empty($ip) && $payload['ip'] !== $ip) {

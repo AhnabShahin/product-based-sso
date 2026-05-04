@@ -31,9 +31,12 @@ class WebKeyController
 
     public function getWebKey()
     {
-        $key = WebKeyService::getInstance()->getOrCreateWebKey();
+        $service = WebKeyService::getInstance();
+        $key = $service->getWebKey();
         return rest_ensure_response(array(
             'web_key' => $key,
+            'has_key' => !empty($key),
+            'has_pin' => !empty($service->getPin()),
         ));
     }
 
@@ -48,6 +51,8 @@ class WebKeyController
         $key = WebKeyService::getInstance()->generateWebKey($pin);
         return rest_ensure_response(array(
             'web_key' => $key,
+            'has_key' => true,
+            'has_pin' => true,
         ));
     }
 

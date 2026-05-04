@@ -6,6 +6,7 @@ use ProductBasedSSO\Repositories\SettingsRepository;
 use ProductBasedSSO\Services\AuthKeyService;
 use ProductBasedSSO\Services\DeviceFingerprintService;
 use ProductBasedSSO\Services\ProductService;
+use ProductBasedSSO\Traits\EncryptionTrait;
 use ProductBasedSSO\Traits\Singleton;
 
 if (!defined('ABSPATH')) {
@@ -138,10 +139,10 @@ class SwitchController
 
         $context = $this->buildContext($params);
         $redirect = $this->buildSignedRedirectUrl($product, $context);
-        $authToken = $this->extractQueryValue($redirect, 'auth_token');
+        $authKey = $this->extractQueryValue($redirect, 'auth_key');
 
         return rest_ensure_response(array(
-            'auth_token' => $authToken,
+            'auth_key' => $authKey,
             'redirect_url' => $redirect,
             'open_target' => !empty($settings['open_product_target']) ? $settings['open_product_target'] : 'self',
             'expires_in' => isset($context['token_lifetime']) ? (int) $context['token_lifetime'] : null,
@@ -156,10 +157,19 @@ class SwitchController
     private function buildSignedRedirectUrl($product, $context)
     {
         $user = wp_get_current_user();
-        $authKey = AuthKeyService::getInstance()->generateAuthKey($user, $product, $context);
+        $authToken = AuthKeyService::getInstance()->generateAuthKey($user, $product, $context);
+
+        // If product has a PIN, AES-encrypt the auth token for secure transmission
+        $pin = !empty($product['pin']) ? $product['pin'] : '';
+        if (!empty($pin)) {
+            $encryptedToken = EncryptionTrait::encrypt($authToken, $pin);
+            $authKeyParam = $encryptedToken !== false ? $encryptedToken : $authToken;
+        } else {
+            $authKeyParam = $authToken;
+        }
 
         return add_query_arg(array(
-            'auth_token' => $authKey,
+            'auth_key' => $authKeyParam,
             'device_fingerprint' => isset($context['device_fingerprint']) ? $context['device_fingerprint'] : '',
             'browser' => isset($context['browser']) ? $context['browser'] : '',
             'os' => isset($context['os']) ? $context['os'] : '',

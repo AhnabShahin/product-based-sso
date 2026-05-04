@@ -57,4 +57,14 @@ class SettingsRepository
     {
         return update_option('product_based_sso_web_key', (string) $webKey);
     }
+
+    public function getWebKeyPin()
+    {
+        return (string) get_option('product_based_sso_web_key_pin', '');
+    }
+
+    public function setWebKeyPin($pin)
+    {
+        return update_option('product_based_sso_web_key_pin', (string) $pin);
+    }
 }
