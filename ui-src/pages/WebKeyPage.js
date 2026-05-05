@@ -70,7 +70,7 @@ export const WebKeyPage = ({ toast }) => {
         </div>
         <div style={{ background: "var(--bg0)", border: "1px solid var(--border1)", borderRadius: "var(--radius-lg)", padding: "18px 20px", transition: "background 0.25s, border-color 0.25s" }}>
           <p style={{ fontSize: 13, fontWeight: 600, color: "var(--text1)", marginBottom: 12 }}>Key properties</p>
-          {[["Algorithm", "AES-256-CBC + HMAC-SHA256"], ["PIN status", hasPin ? "Configured" : "Not set"], ["Token lifetime", "30 seconds"], ["Storage", "WordPress options"]].map(([k, v]) => (
+          {[["Algorithm", "AES-256-CBC + HMAC-SHA256"], ["PIN status", hasPin ? "Configured" : "Not set"], ["Token Expiration", "Lifetime"], ["Storage", "WordPress options"]].map(([k, v]) => (
             <div key={k} style={{ display: "flex", justifyContent: "space-between", fontSize: 12, padding: "6px 0", borderBottom: "1px solid var(--border1)" }}>
               <span style={{ color: "var(--text3)" }}>{k}</span>
               <span style={{ fontWeight: 500, fontFamily: k === "Algorithm" ? "var(--mono)" : undefined, fontSize: k === "Algorithm" ? 11 : undefined, color: k === "PIN status" ? (hasPin ? "var(--success, #22c55e)" : "var(--warn)") : undefined }}>{v}</span>

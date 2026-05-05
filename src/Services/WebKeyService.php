@@ -31,8 +31,16 @@ class WebKeyService
 
     public function generateWebKey($pin)
     {
-        $material = sprintf('%s|%s|%s', (string) $pin, wp_generate_uuid4(), bin2hex(random_bytes(16)));
-        $key = 'wk_' . hash('sha256', $material);
+        $data = [
+            'site_url' => get_site_url(),
+            'timestamp' => time(),
+            'is_ssl' => is_ssl(),
+            'php_version' => phpversion(),
+            'wp_version' => get_bloginfo('version'),
+            'plugin_version' => PRODUCT_BASED_SSO_VERSION,
+        ];
+        
+        $key = $this->encryptWithPin($data, $pin);
         SettingsRepository::getInstance()->setWebKey($key);
         SettingsRepository::getInstance()->setWebKeyPin((string) $pin);
         return $key;
@@ -42,9 +50,8 @@ class WebKeyService
      * Encrypt a value using this site's stored PIN.
      * Used when sending auth tokens to remote sites.
      */
-    public function encryptWithPin($data)
+    public function encryptWithPin($data, $pin)
     {
-        $pin = $this->getPin();
         if (empty($pin)) {
             return false;
         }
