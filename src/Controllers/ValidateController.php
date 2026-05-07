@@ -10,6 +10,7 @@ use ProductBasedSSO\Services\ProductService;
 use ProductBasedSSO\Services\RateLimitService;
 use ProductBasedSSO\Services\ValidationService;
 use ProductBasedSSO\Services\WebKeyService;
+use ProductBasedSSO\Traits\EncryptionTrait;
 use ProductBasedSSO\Traits\Singleton;
 
 if (!defined('ABSPATH')) {
@@ -71,52 +72,77 @@ class ValidateController
             return new \WP_REST_Response(array('success' => false, 'message' => 'Too many attempts. Please try again later.'), 429);
         }
 
-        // --- Step 1: Decode token to allow cheap checks before HMAC ---
+        // --- Step 1: Decode token to allow cheap checks before full validation ---
         $decoded = ValidationService::getInstance()->decodeAuthKey($authToken);
         if (empty($decoded) || empty($decoded['payload'])) {
             RateLimitService::getInstance()->recordFailure($ip, $settings);
             return new \WP_REST_Response(array('success' => false, 'message' => 'Invalid token.'), 401);
         }
 
-        $rawPayload = $decoded['payload'];
+        $payload = $decoded['payload'];
 
-        // --- Step 2: Expiry pre-check ---
-        // if (empty($rawPayload['exp']) || (int) $rawPayload['exp'] < time()) {
-        //     return new \WP_REST_Response(array('success' => false, 'message' => 'Token has expired.'), 401);
-        // }
-
-        // --- Step 3: Nonce anti-replay ---
-        $nonce = !empty($rawPayload['nonce']) ? (string) $rawPayload['nonce'] : '';
+        // --- Step 2: Nonce anti-replay ---
+        $nonce = !empty($payload['nonce']) ? (string) $payload['nonce'] : '';
         if (empty($nonce)) {
             return new \WP_REST_Response(array('success' => false, 'message' => 'Invalid token: missing nonce.'), 401);
         }
 
         $nonceKey = 'sso_nonce_' . substr(hash('sha256', $nonce), 0, 40);
         if (get_transient($nonceKey) !== false) {
-            $this->logFailure('replay_attack', $rawPayload, null, $ip, '', 'replay_attack');
+            $this->logFailure('replay_attack', $payload, null, $ip, '', 'replay_attack');
             return new \WP_REST_Response(array('success' => false, 'message' => 'Token has already been used.'), 401);
         }
 
-        // --- Step 4: Full HMAC + policy validation ---
-        $context     = $this->buildContext($request, $ip);
-        $currentHost = wp_parse_url(home_url(), PHP_URL_HOST);
-        $webKey      = WebKeyService::getInstance()->getWebKey();
+        // --- Step 3: Browser / device comparison ---
+        // Compare the device details collected on this page load against what
+        // the source site embedded in the auth_key at token-generation time.
+        $context           = $this->buildContext($request, $ip);
+        $currentBrowser    = strtolower((string) ($context['browser'] ?? ''));
+        $currentOs         = strtolower((string) ($context['os'] ?? ''));
+        $currentFingerprint = (string) ($context['device_fingerprint'] ?? '');
 
-        $validation = ValidationService::getInstance()->validate(
-            $authToken,
-            $webKey,
-            $currentHost,
-            $context
-        );
+        $tokenBrowser     = strtolower((string) ($payload['browser'] ?? ''));
+        $tokenOs          = strtolower((string) ($payload['os'] ?? ''));
+        $tokenFingerprint = (string) ($payload['device_fingerprint'] ?? '');
 
-        if (empty($validation['ok'])) {
-            $reason = isset($validation['reason']) ? $validation['reason'] : 'invalid_token';
+        if (
+            (!empty($tokenBrowser) && !empty($currentBrowser) && $tokenBrowser !== $currentBrowser) ||
+            (!empty($tokenOs) && !empty($currentOs) && $tokenOs !== $currentOs) ||
+            (!empty($tokenFingerprint) && !empty($currentFingerprint) && $tokenFingerprint !== $currentFingerprint)
+        ) {
             RateLimitService::getInstance()->recordFailure($ip, $settings);
-            $this->logFailure($reason, $rawPayload, null, $ip, $context['device_fingerprint'], $reason);
-            return new \WP_REST_Response(array('success' => false, 'message' => 'Unauthorized: ' . $reason), 401);
+            $this->logFailure('device_mismatch', $payload, null, $ip, $currentFingerprint, 'device_mismatch');
+            return new \WP_REST_Response(array('success' => false, 'message' => 'Unauthorized: device mismatch.'), 401);
         }
 
-        $payload = $validation['payload'];
+        // --- Step 4: Decrypt and validate the encrypted_web_key using this site's PIN ---
+        $encryptedWebKey = isset($payload['encrypted_web_key']) ? (string) $payload['encrypted_web_key'] : '';
+        if (empty($encryptedWebKey)) {
+            RateLimitService::getInstance()->recordFailure($ip, $settings);
+            return new \WP_REST_Response(array('success' => false, 'message' => 'Invalid token: missing web key.'), 401);
+        }
+
+        $pin = WebKeyService::getInstance()->getPin();
+        if (empty($pin)) {
+            return new \WP_REST_Response(array('success' => false, 'message' => 'SSO not configured on this site.'), 503);
+        }
+
+        $decryptedWebKeyData = EncryptionTrait::decrypt($encryptedWebKey, $pin);
+        if ($decryptedWebKeyData === false) {
+            RateLimitService::getInstance()->recordFailure($ip, $settings);
+            $this->logFailure('invalid_web_key', $payload, null, $ip, $currentFingerprint, 'invalid_web_key');
+            return new \WP_REST_Response(array('success' => false, 'message' => 'Unauthorized: invalid web key.'), 401);
+        }
+
+        // Confirm the decrypted web key data belongs to this site.
+        if (
+            !empty($decryptedWebKeyData['site_url']) &&
+            trailingslashit($decryptedWebKeyData['site_url']) !== trailingslashit(get_site_url())
+        ) {
+            RateLimitService::getInstance()->recordFailure($ip, $settings);
+            $this->logFailure('invalid_web_key', $payload, null, $ip, $currentFingerprint, 'web_key_site_mismatch');
+            return new \WP_REST_Response(array('success' => false, 'message' => 'Unauthorized: web key not for this site.'), 401);
+        }
 
         // // --- Step 5: Source product must be registered and active ---
         // if (!empty($payload['from_product'])) {

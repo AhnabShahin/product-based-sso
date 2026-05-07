@@ -6,7 +6,6 @@ use ProductBasedSSO\Repositories\SettingsRepository;
 use ProductBasedSSO\Services\AuthKeyService;
 use ProductBasedSSO\Services\DeviceFingerprintService;
 use ProductBasedSSO\Services\ProductService;
-use ProductBasedSSO\Traits\EncryptionTrait;
 use ProductBasedSSO\Traits\Singleton;
 
 if (!defined('ABSPATH')) {
@@ -159,17 +158,8 @@ class SwitchController
         $user = wp_get_current_user();
         $authToken = AuthKeyService::getInstance()->generateAuthKey($user, $product, $context);
 
-        // If product has a PIN, AES-encrypt the auth token for secure transmission
-        $pin = !empty($product['pin']) ? $product['pin'] : '';
-        if (!empty($pin)) {
-            $encryptedToken = EncryptionTrait::encrypt($authToken, $pin);
-            $authKeyParam = $encryptedToken !== false ? $encryptedToken : $authToken;
-        } else {
-            $authKeyParam = $authToken;
-        }
-
         return add_query_arg(array(
-            'auth_key' => $authKeyParam,
+            'auth_key' => $authToken,
             'device_fingerprint' => isset($context['device_fingerprint']) ? $context['device_fingerprint'] : '',
             'browser' => isset($context['browser']) ? $context['browser'] : '',
             'os' => isset($context['os']) ? $context['os'] : '',
