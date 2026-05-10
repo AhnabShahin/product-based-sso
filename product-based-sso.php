@@ -76,6 +76,7 @@ class ProductBasedSSO_Plugin
         });
 
         add_filter('query_vars', array($this, 'registerQueryVars'));
+        add_action('init', array(ProductBasedSSO\Controllers\SsoController::getInstance(), 'handleSsoRequest'), 1);
         add_action('template_redirect', array(ProductBasedSSO\Controllers\SsoController::getInstance(), 'handleSsoRequest'));
         add_action('template_redirect', array(ProductBasedSSO\Controllers\SwitchController::getInstance(), 'handleSwitchRequest'));
 
