@@ -168,6 +168,11 @@ class SsoController
           text-align: center
         }
 
+        .meta {
+          text-align: center;
+          width: 100%;
+        }
+
         .btn {
           width: 100%;
           padding: 13px;
@@ -257,7 +262,7 @@ class SsoController
     <body>
       <div class="card">
         <div class="avatar"><?php echo esc_html($initials); ?></div>
-        <div>
+        <div class="meta">
           <div class="title">Continue as</div>
           <div class="email"><?php echo $safeEmail; ?></div>
           <?php if ($fromLabel): ?>
