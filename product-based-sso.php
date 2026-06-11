@@ -1,7 +1,6 @@
 <?php
 /**
  * Plugin Name: Product Based SSO
- * Plugin URI: https://example.com/product-based-sso
  * Description: Product-based cross-domain SSO for WordPress using short-lived auth keys.
  * Version: 1.0.0
  * Author: Your Name
