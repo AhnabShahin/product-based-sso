@@ -17,7 +17,7 @@ class EncryptionTrait
      */
     public static function decrypt(string $token, string $secret)
     {
-        if (empty($token) || !str_starts_with($token, 'AES-')) {
+        if (empty($token) || strpos($token, 'AES-') !== 0) {
             return false;
         }
 

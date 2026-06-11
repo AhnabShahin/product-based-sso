@@ -30,7 +30,9 @@ class DashboardController
         global $wpdb;
 
         $logsTable = Database::getInstance()->getLogsTable();
-        $totalAuths = (int) $wpdb->get_var("SELECT COUNT(*) FROM {$logsTable}");
+        $totalAuths = (int) $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM {$logsTable}"
+        ));
         $successAuths = (int) $wpdb->get_var($wpdb->prepare(
             "SELECT COUNT(*) FROM {$logsTable} WHERE event_type = %s",
             'success'

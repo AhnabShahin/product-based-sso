@@ -264,9 +264,9 @@ class SsoController
         <div class="avatar"><?php echo esc_html($initials); ?></div>
         <div class="meta">
           <div class="title">Continue as</div>
-          <div class="email"><?php echo $safeEmail; ?></div>
+          <div class="email"><?php echo esc_html($safeEmail); ?></div>
           <?php if ($fromLabel): ?>
-            <div class="from">from <?php echo $fromLabel; ?></div>
+            <div class="from">from <?php echo esc_html($fromLabel); ?></div>
           <?php endif; ?>
         </div>
 
@@ -285,7 +285,7 @@ class SsoController
 
       <script>
         (function() {
-          var AUTH_KEY = <?php echo $jsonToken; ?>;
+          var AUTH_KEY = <?php echo wp_json_encode($jsonToken, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
           var VALIDATE_URL = <?php echo wp_json_encode($validateUrl); ?>;
           var STEPS = ['s0', 's1', 's2', 's3'];
 

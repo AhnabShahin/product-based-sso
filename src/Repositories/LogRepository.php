@@ -50,6 +50,8 @@ class LogRepository
     {
         global $wpdb;
         $table = Database::getInstance()->getLogsTable();
-        return $wpdb->query("TRUNCATE TABLE {$table}");
+        return $wpdb->query($wpdb->prepare(
+            "TRUNCATE TABLE {$table}"
+        ));
     }
 }

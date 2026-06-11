@@ -76,7 +76,7 @@ class SwitchController
                     echo '<span class="product-sso-badge">' . esc_html(substr($name, 0, 2)) . '</span>';
                 }
                 echo '<div class="product-sso-meta">';
-                echo '<span class="product-sso-name">' . $name . '</span>';
+                echo '<span class="product-sso-name">' . esc_html($name) . '</span>';
                 echo '<button class="product-sso-btn" type="button" data-product-id="' . esc_attr($id) . '">Switch</button>';
                 echo '</div>';
                 echo '</li>';
@@ -95,7 +95,7 @@ class SwitchController
         }
 
         if (!is_user_logged_in()) {
-            wp_redirect(wp_login_url(home_url(add_query_arg(array('product_sso_switch' => $productId)))));
+            wp_safe_redirect(wp_login_url(home_url(add_query_arg(array('product_sso_switch' => $productId)))));
             exit;
         }
 
@@ -112,7 +112,7 @@ class SwitchController
         $this->ensureSwitchAllowed($product);
         $redirect = $this->buildSignedRedirectUrl($product, $context);
 
-        wp_redirect($redirect);
+        wp_safe_redirect($redirect);
         exit;
     }
 

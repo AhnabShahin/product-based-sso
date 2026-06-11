@@ -1,7 +1,7 @@
 === Product Based SSO ===
 Contributors: BdAddons
 Tags: sso, single sign-on, cross-domain, authentication, rest api
-Requires at least: 6.0
+Requires at least: 5.8
 Tested up to: 7.0
 Stable tag: 1.0.0
 Requires PHP: 7.4
